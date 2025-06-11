@@ -1,0 +1,22 @@
+# .NET build files
+bin/
+obj/
+
+# SQLite database files
+*.db
+*.sqlite
+*.sqlite3
+
+# EF Core Migrations snapshot files (optional)
+**/Migrations/*Snapshot.cs
+
+# User secrets
+secrets.json
+
+
+# ASP.NET Core specific folders
+App_Data/
+wwwroot/
+
+# Logs
+*.log
