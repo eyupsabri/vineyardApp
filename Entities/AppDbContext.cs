@@ -75,13 +75,15 @@ namespace Entities
                 new Pump
                 {
                     Id = 1,
-                    IsOn = false,
+                    DesiredState = false,
+                    ActualState = false,
                     IoTDeviceId = 1
                 },
                 new Pump
                 {
                     Id = 2,
-                    IsOn = false,
+                    DesiredState = false,
+                    ActualState = false,
                     IoTDeviceId = 2
                 }
             );

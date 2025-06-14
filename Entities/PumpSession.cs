@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using static Entities.Enums.DbEnums;
 
 namespace Entities
 {
@@ -11,7 +7,8 @@ namespace Entities
         public int Id { get; set; }
         public DateTime StartTime { get; set; }
         public DateTime? EndTime { get; set; }
-
+        public bool WasInterrupted { get; set; }
+        public PumpStateChangeSource ChangeSource { get; set; }
         public int PumpId { get; set; }
         public Pump Pump { get; set; }
 

@@ -9,7 +9,7 @@ namespace VineyardApp.AutoMapper
     {
         public AutoMapperProfile()
         {
-            CreateMap<IoTDevice, DesiredStatusDTO>();
+            CreateMap<IoTDevice, IoTPollingDTO>();
 
         }
     }

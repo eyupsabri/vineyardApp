@@ -18,7 +18,7 @@ namespace VineyardApp.Controllers
             _mapper = mapper;
         }
 
-        [HttpGet]
+        [HttpGet("[action]")]
         public async Task<IActionResult> GetDesiredDeviceStatus(Guid deviceIdentifier)
         {
             var iotDevice = await _iotDeviceService.GetIoTDeviceByDeviceId(deviceIdentifier);
@@ -26,16 +26,28 @@ namespace VineyardApp.Controllers
             {
                 return NotFound($"Device with identifier {deviceIdentifier} not found.");
             }
-            var desiredStatusMapped = _mapper.Map<DesiredStatusDTO>(iotDevice);
-            return Ok(desiredStatusMapped);
+            var pollingDTO = _mapper.Map<IoTPollingDTO>(iotDevice);
+            return Ok(pollingDTO);
         }
 
-        [HttpGet]
-        public async Task<IActionResult> ChangeActualDeviceStatus(Guid deviceIdentifier, bool status)
+        [HttpGet("[action]")]
+        public async Task<IActionResult> UpdateIoTDeviceStatus([FromQuery] UpdateStatusRequestDTO dto)
         {
-            var success = await _iotDeviceService.ChangeActualDeviceStatus(deviceIdentifier, status);
+            var iotDevice = await _iotDeviceService.GetIoTDeviceByDeviceId(dto.DeviceIdentifier);
 
-            return Ok(success);
+            if (iotDevice == null || iotDevice.Pump == null)
+                return NotFound("Device or pump not found");
+
+            var pump = iotDevice.Pump;
+            pump.LastHeartbeat = DateTime.UtcNow;
+
+            var success = await _iotDeviceService.UpdateDeviceStatus(pump, dto);
+            if (!success)
+            {
+                return StatusCode(500, "Failed to update device status");
+            }
+
+            return Ok();
         }
     }
 }
