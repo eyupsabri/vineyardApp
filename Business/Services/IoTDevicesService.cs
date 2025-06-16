@@ -20,7 +20,7 @@ namespace Business.Services
             return await _unitOfWork.IoTDevicesRepo.GetIoTDeviceByDeviceId(id);
         }
 
-        public async Task<bool> UpdateDeviceStatus(Pump pump, UpdateStatusRequestDTO dto)
+        public async Task<int> UpdateDeviceStatus(Pump pump, UpdateStatusRequestDTO dto)
         {
 
             bool actualStateChanged = pump.ActualState != dto.ActualState;
@@ -69,6 +69,7 @@ namespace Business.Services
 
             }
             return await _unitOfWork.SaveChangesAsync(); // Save changes to the database and return success status
+
         }
     }
 }

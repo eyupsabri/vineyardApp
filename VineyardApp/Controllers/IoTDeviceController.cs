@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Business.Services;
 using Entities.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace VineyardApp.Controllers
@@ -18,6 +19,7 @@ namespace VineyardApp.Controllers
             _mapper = mapper;
         }
 
+        [AllowAnonymous]
         [HttpGet("[action]")]
         public async Task<IActionResult> GetDesiredDeviceStatus(Guid deviceIdentifier)
         {
@@ -30,8 +32,8 @@ namespace VineyardApp.Controllers
             return Ok(pollingDTO);
         }
 
-        [HttpGet("[action]")]
-        public async Task<IActionResult> UpdateIoTDeviceStatus([FromQuery] UpdateStatusRequestDTO dto)
+        [HttpPost("[action]")]
+        public async Task<IActionResult> UpdateIoTDeviceStatus(UpdateStatusRequestDTO dto)
         {
             var iotDevice = await _iotDeviceService.GetIoTDeviceByDeviceId(dto.DeviceIdentifier);
 
@@ -42,12 +44,11 @@ namespace VineyardApp.Controllers
             pump.LastHeartbeat = DateTime.UtcNow;
 
             var success = await _iotDeviceService.UpdateDeviceStatus(pump, dto);
-            if (!success)
-            {
-                return StatusCode(500, "Failed to update device status");
-            }
 
-            return Ok();
+            return Ok(new
+            {
+                updated = success
+            });
         }
     }
 }

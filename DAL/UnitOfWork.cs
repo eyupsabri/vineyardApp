@@ -15,7 +15,20 @@ namespace DAL
             PumpSessionsRepo = pumpSessions;
         }
 
-        public async Task<bool> SaveChangesAsync() => await _context.SaveChangesAsync() > 0;
+        public async Task<int> SaveChangesAsync()
+        {
+            try
+            {
+                return await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                // Optional: log the exception here
+                // e.g., _logger.LogError(ex, "SaveChangesAsync failed.");
+
+                return -1;
+            }
+        }
 
         public void Dispose() => _context.Dispose();
     }

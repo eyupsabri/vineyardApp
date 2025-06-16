@@ -4,7 +4,7 @@
     {
         IIoTDeviceRepository IoTDevicesRepo { get; }
         IPumpSessionRepository PumpSessionsRepo { get; }
-        Task<bool> SaveChangesAsync();
+        Task<int> SaveChangesAsync();
     }
 
 }
