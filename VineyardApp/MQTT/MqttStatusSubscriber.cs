@@ -1,8 +1,9 @@
 ﻿using Business.Services;
 using Entities.DTOs;
 using Microsoft.Extensions.Options;
+using MQTTnet;
 using MQTTnet.Client;
-using MQTTnet.Protocol;         // ← QoS enum lives here
+using MQTTnet.Protocol;
 using System.Text;
 using System.Text.Json;
 
@@ -12,49 +13,116 @@ namespace VineyardApp.MQTT
     {
         private readonly IMqttClient _mqtt;
         private readonly MqttOptions _opts;
-        private readonly IIoTDevicesService _service;
+        private readonly IServiceScopeFactory _scopeFactory;
+        private readonly ILogger<MqttStatusSubscriber> _logger;
 
         public MqttStatusSubscriber(
             IMqttClient mqtt,
             IOptions<MqttOptions> opts,
-            IIoTDevicesService service)
+            IServiceScopeFactory scopeFactory,
+            ILogger<MqttStatusSubscriber> logger)
         {
             _mqtt = mqtt;
             _opts = opts.Value;
-            _service = service;
+            _scopeFactory = scopeFactory;
+            _logger = logger;
         }
-
         public override async Task StartAsync(CancellationToken ct)
         {
+            try
+            {
+                _logger.LogInformation("[MQTT-DIAG] StartAsync() fired");
+                _logger.LogInformation(
+                    "[MQTT-OPTS] Host={Host}, Port={Port}, User={User}, Pass={Pass}",
+                    _opts.Host,
+                    _opts.Port,
+                    _opts.Username ?? "<null>",
+                    _opts.Password != null ? new string('*', _opts.Password.Length) : "<null>"
+                );
+
+                // Now call the base so ExecuteAsync runs:
+                await base.StartAsync(ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[MQTT-DIAG] StartAsync failed");
+            }
+
+        }
+
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+
+            // Build client options
             var builder = new MqttClientOptionsBuilder()
                 .WithTcpServer(_opts.Host, _opts.Port)
                 .WithCredentials(_opts.Username, _opts.Password);
 
             if (_opts.UseTls)
+            {
+                _logger.LogInformation("[MQTT] Enabling TLS");
                 builder = builder.WithTls();
+            }
 
-            var clientOptions = builder.Build();
+            var clientOptions = builder
+                .WithCleanSession()
+                .Build();
 
+            // Connected event
+            _mqtt.ConnectedAsync += async e =>
+            {
+                _logger.LogInformation("[MQTT] Connected to {Host}:{Port}", _opts.Host, _opts.Port);
+                await _mqtt.SubscribeAsync(new MqttTopicFilterBuilder()
+                    .WithTopic("vineyard/+/status")
+                    .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce)
+                    .Build());
+                _logger.LogInformation("[MQTT] Subscribed to 'vineyard/+/status'");
+            };
+
+            // Disconnected event
+            _mqtt.DisconnectedAsync += e =>
+            {
+                _logger.LogWarning("[MQTT] Disconnected: {Reason}", e.Reason);
+                return Task.CompletedTask;
+            };
+
+            // Message received
             _mqtt.ApplicationMessageReceivedAsync += async e =>
             {
                 var topic = e.ApplicationMessage.Topic;
                 var payload = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
+                _logger.LogInformation("[MQTT] Received on '{Topic}': {Payload}", topic, payload);
 
                 var dto = JsonSerializer.Deserialize<UpdateStatusRequestDTO>(payload);
-                if (dto is null) return;
+                if (dto is null)
+                {
+                    _logger.LogWarning("[MQTT] Failed to deserialize payload: {Payload}", payload);
+                    return;
+                }
 
                 var parts = topic.Split('/');
                 if (parts.Length == 3 && Guid.TryParse(parts[1], out var deviceGuid))
                     dto.DeviceIdentifier = deviceGuid;
 
-                await _service.UpdateDeviceStatus(dto);
+                using var scope = _scopeFactory.CreateScope();
+                var service = scope.ServiceProvider.GetRequiredService<IIoTDevicesService>();
+                await service.UpdateDeviceStatus(dto);
+                _logger.LogInformation("[MQTT] Updated status for device {DeviceId}", dto.DeviceIdentifier);
             };
 
-            await _mqtt.ConnectAsync(clientOptions, ct);
-            await _mqtt.SubscribeAsync("vineyard/+/status", MqttQualityOfServiceLevel.AtLeastOnce);
-        }
+            // Connect
+            try
+            {
+                await _mqtt.ConnectAsync(clientOptions, stoppingToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[MQTT] Connection failed");
+                //throw;
+            }
 
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
-            => Task.CompletedTask;
+            // Keep running until stopped
+            await Task.Delay(Timeout.Infinite, stoppingToken);
+        }
     }
 }

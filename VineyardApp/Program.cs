@@ -3,6 +3,7 @@ using DAL;
 using Entities;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
+using MQTTnet;
 using VineyardApp.MQTT;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,6 +23,17 @@ builder.Services.AddHttpsRedirection(options =>
     options.HttpsPort = 443;
 });
 
+
+// force console output of Info-level logs from *all* categories
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.SetMinimumLevel(LogLevel.Information);
+builder.Host.ConfigureHostOptions(opts =>
+{
+    opts.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore;
+});
+
+
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -36,13 +48,20 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 builder.Services.AddScoped<IIoTDevicesService, IoTDevicesService>();
 
-
 builder.Services.AddAutoMapper(typeof(Program).Assembly);
+
 
 builder.Services.Configure<MqttOptions>(
     builder.Configuration.GetSection("HiveMQ"));
 
+builder.Services.AddSingleton(sp =>
+{
+    var factory = new MqttFactory();
+    return factory.CreateMqttClient();
+});
 
+// 6) Register your background MQTT subscriber
+builder.Services.AddHostedService<MqttStatusSubscriber>();
 
 
 var app = builder.Build();
