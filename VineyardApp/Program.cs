@@ -1,11 +1,26 @@
-using Business.Services;
+﻿using Business.Services;
 using DAL;
 using Entities;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
+using VineyardApp.MQTT;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+
+// Configure forwarded headers (so HTTPS redirection works behind Fly proxy)
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();  // trust any network
+    options.KnownProxies.Clear();   // trust any proxy
+});
+
+// Configure HTTPS redirection
+builder.Services.AddHttpsRedirection(options =>
+{
+    options.HttpsPort = 443;
+});
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -24,7 +39,23 @@ builder.Services.AddScoped<IIoTDevicesService, IoTDevicesService>();
 
 builder.Services.AddAutoMapper(typeof(Program).Assembly);
 
+builder.Services.Configure<MqttOptions>(
+    builder.Configuration.GetSection("HiveMQ"));
+
+
+
+
 var app = builder.Build();
+
+app.UseForwardedHeaders();        // ← must come before everything that relies on proto
+app.UseHttpsRedirection();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
+
 
 // Configure the HTTP request pipeline.
 //if (app.Environment.IsDevelopment())
@@ -36,7 +67,7 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 app.UseAuthorization();
 

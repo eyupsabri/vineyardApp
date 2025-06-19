@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
 using Business.Services;
 using Entities.DTOs;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace VineyardApp.Controllers
@@ -19,7 +18,6 @@ namespace VineyardApp.Controllers
             _mapper = mapper;
         }
 
-        [AllowAnonymous]
         [HttpGet("[action]")]
         public async Task<IActionResult> GetDesiredDeviceStatus(Guid deviceIdentifier)
         {
@@ -40,14 +38,14 @@ namespace VineyardApp.Controllers
             if (iotDevice == null || iotDevice.Pump == null)
                 return NotFound("Device or pump not found");
 
-            var pump = iotDevice.Pump;
-            pump.LastHeartbeat = DateTime.UtcNow;
+            //var pump = iotDevice.Pump;
+            //pump.LastHeartbeat = DateTime.UtcNow;
 
-            var success = await _iotDeviceService.UpdateDeviceStatus(pump, dto);
+            //var success = await _iotDeviceService.UpdateDeviceStatus(pump, dto);
 
             return Ok(new
             {
-                updated = success
+                updated = 1
             });
         }
     }

@@ -20,9 +20,16 @@ namespace Business.Services
             return await _unitOfWork.IoTDevicesRepo.GetIoTDeviceByDeviceId(id);
         }
 
-        public async Task<int> UpdateDeviceStatus(Pump pump, UpdateStatusRequestDTO dto)
+        //public async Task<int> UpdateDeviceStatus(Pump pump, UpdateStatusRequestDTO dto)
+        public async Task<int> UpdateDeviceStatus(UpdateStatusRequestDTO dto)
         {
+            var iotDevice = await GetIoTDeviceByDeviceId(dto.DeviceIdentifier);
+            if (iotDevice == null || iotDevice.Pump == null)
+                return -1;
 
+            var pump = iotDevice.Pump;
+            pump.LastHeartbeat = DateTime.UtcNow;
+            ////////
             bool actualStateChanged = pump.ActualState != dto.ActualState;
 
 

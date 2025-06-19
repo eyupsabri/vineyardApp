@@ -1,0 +1,28 @@
+# flyctl launch added from .gitignore
+# .NET build files
+**\bin
+**\obj
+
+# SQLite database files
+**\*.db
+**\*.sqlite
+**\*.sqlite3
+
+
+**\.vs
+**\vineyard.db-shm
+**\vineyard.db-wal
+
+# User secrets
+**\secrets.json
+
+
+# ASP.NET Core specific folders
+**\App_Data
+**\wwwroot
+
+# Logs
+**\*.log
+
+
+fly.toml

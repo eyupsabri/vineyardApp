@@ -6,6 +6,6 @@ namespace Business.Services
     public interface IIoTDevicesService
     {
         public Task<IoTDevice> GetIoTDeviceByDeviceId(Guid id);
-        public Task<int> UpdateDeviceStatus(Pump pump, UpdateStatusRequestDTO dto);
+        public Task<int> UpdateDeviceStatus(UpdateStatusRequestDTO dto);
     }
 }
