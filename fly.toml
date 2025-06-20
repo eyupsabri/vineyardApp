@@ -1,22 +1,21 @@
-# fly.toml app configuration file generated for vineyardapp on 2025-06-18T19:08:35+03:00
-#
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
-
 app = 'vineyardapp'
 primary_region = 'ams'
+
+[deploy]
+  auto_stop_machines  = "off"
+  auto_start_machines = false
 
 [build]
 
 [http_service]
-  internal_port = 80
-  force_https = true
-  auto_stop_machines = 'stop'
-  auto_start_machines = true
-  min_machines_running = 0
-  processes = ['app']
+  internal_port       = 80
+  force_https         = true
+  auto_stop_machines  = "off"    # ← turn off idle shutdown
+  auto_start_machines = false    # ← don’t spin up on HTTP
+  min_machines_running = 1       # ← keep at least one VM alive
+  processes           = ["app"]
 
 [[vm]]
-  memory = '1gb'
-  cpu_kind = 'shared'
-  cpus = 1
+  memory   = "1gb"
+  cpu_kind = "shared"
+  cpus     = 1

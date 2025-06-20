@@ -4,8 +4,8 @@ namespace Entities.DTOs
 {
     public class UpdateStatusRequestDTO
     {
-        public Guid DeviceIdentifier { get; set; }
-        public bool ActualState { get; set; }
+        public required Guid DeviceIdentifier { get; set; }
+        public required bool ActualState { get; set; }
         public DeviceTriggerSource TriggeredBy { get; set; } = DeviceTriggerSource.Unknown;
 
     }

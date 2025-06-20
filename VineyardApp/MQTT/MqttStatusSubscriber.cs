@@ -1,5 +1,6 @@
 ﻿using Business.Services;
 using Entities.DTOs;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using MQTTnet;
 using MQTTnet.Client;
@@ -93,12 +94,24 @@ namespace VineyardApp.MQTT
                 var payload = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
                 _logger.LogInformation("[MQTT] Received on '{Topic}': {Payload}", topic, payload);
 
-                var dto = JsonSerializer.Deserialize<UpdateStatusRequestDTO>(payload);
-                if (dto is null)
+
+                UpdateStatusRequestDTO dto;
+                try
                 {
-                    _logger.LogWarning("[MQTT] Failed to deserialize payload: {Payload}", payload);
+                    dto = JsonSerializer.Deserialize<UpdateStatusRequestDTO>(payload)
+                          ?? throw new JsonException("Payload deserialized to null");
+                }
+                catch (Exception je)
+                {
+                    _logger.LogWarning(je, "[MQTT] Incomplete payload—aborting: {Payload}", payload);
                     return;
                 }
+
+                //if (dto is null)
+                //{
+                //    _logger.LogWarning("[MQTT] Failed to deserialize payload: {Payload}", payload);
+                //    return;
+                //}
 
                 var parts = topic.Split('/');
                 if (parts.Length == 3 && Guid.TryParse(parts[1], out var deviceGuid))
@@ -106,7 +119,20 @@ namespace VineyardApp.MQTT
 
                 using var scope = _scopeFactory.CreateScope();
                 var service = scope.ServiceProvider.GetRequiredService<IIoTDevicesService>();
-                await service.UpdateDeviceStatus(dto);
+
+                try
+                {
+                    await service.UpdateDeviceStatus(dto);
+                    _logger.LogInformation("[MQTT] Updated status for device {DeviceId}", dto.DeviceIdentifier);
+                }
+                catch (DbUpdateException dbEx)
+                {
+                    _logger.LogWarning(dbEx, "[MQTT] Failed to update device {DeviceId} (DB error)—ignoring", dto.DeviceIdentifier);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "[MQTT] Unexpected error updating device {DeviceId}", dto.DeviceIdentifier);
+                }
                 _logger.LogInformation("[MQTT] Updated status for device {DeviceId}", dto.DeviceIdentifier);
             };
 
