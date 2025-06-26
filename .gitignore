@@ -18,7 +18,7 @@ vineyard.db-wal
 
 # User secrets
 secrets.json
-
+appsettings.Development.json
 
 # ASP.NET Core specific folders
 App_Data/
