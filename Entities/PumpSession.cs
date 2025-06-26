@@ -8,7 +8,8 @@ namespace Entities
         public DateTime StartTime { get; set; }
         public DateTime? EndTime { get; set; }
         public bool WasInterrupted { get; set; }
-        public PumpStateChangeSource ChangeSource { get; set; }
+        public PumpStateChangeSource StartSource { get; set; }
+        public PumpStateChangeSource? EndSource { get; set; }
         public int PumpId { get; set; }
         public Pump Pump { get; set; }
 

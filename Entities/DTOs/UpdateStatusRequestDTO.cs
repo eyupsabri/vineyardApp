@@ -6,7 +6,7 @@ namespace Entities.DTOs
     {
         public required Guid DeviceIdentifier { get; set; }
         public required bool ActualState { get; set; }
-        public DeviceTriggerSource TriggeredBy { get; set; } = DeviceTriggerSource.Unknown;
+        public DeviceTriggerSource TriggeredBy { get; set; }
 
     }
 }

@@ -74,10 +74,10 @@ namespace VineyardApp.MQTT
             {
                 _logger.LogInformation("[MQTT] Connected to {Host}:{Port}", _opts.Host, _opts.Port);
                 await _mqtt.SubscribeAsync(new MqttTopicFilterBuilder()
-                    .WithTopic("vineyard/+/status")
+                    .WithTopic("vineyard/+/updatestatus")
                     .WithQualityOfServiceLevel(MqttQualityOfServiceLevel.AtLeastOnce)
                     .Build());
-                _logger.LogInformation("[MQTT] Subscribed to 'vineyard/+/status'");
+                _logger.LogInformation("[MQTT] Subscribed to 'vineyard/+/updatestatus'");
             };
 
             // Disconnected event
@@ -95,11 +95,10 @@ namespace VineyardApp.MQTT
                 _logger.LogInformation("[MQTT] Received on '{Topic}': {Payload}", topic, payload);
 
 
-                UpdateStatusRequestDTO dto;
+                StatusPayload statusDto;
                 try
                 {
-                    dto = JsonSerializer.Deserialize<UpdateStatusRequestDTO>(payload)
-                          ?? throw new JsonException("Payload deserialized to null");
+                    statusDto = JsonSerializer.Deserialize<StatusPayload>(payload, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })! ?? throw new JsonException("Payload deserialized to null");
                 }
                 catch (Exception je)
                 {
@@ -114,16 +113,23 @@ namespace VineyardApp.MQTT
                 //}
 
                 var parts = topic.Split('/');
-                if (parts.Length == 3 && Guid.TryParse(parts[1], out var deviceGuid))
-                    dto.DeviceIdentifier = deviceGuid;
+                if (parts.Length != 3 || !Guid.TryParse(parts[1], out var deviceGuid))
+                    return;
+
+                var dto = new UpdateStatusRequestDTO
+                {
+                    DeviceIdentifier = deviceGuid,
+                    ActualState = statusDto.ActualState,
+                    TriggeredBy = statusDto.TriggeredBy
+                };
 
                 using var scope = _scopeFactory.CreateScope();
                 var service = scope.ServiceProvider.GetRequiredService<IIoTDevicesService>();
 
                 try
                 {
-                    await service.UpdateDeviceStatus(dto);
-                    _logger.LogInformation("[MQTT] Updated status for device {DeviceId}", dto.DeviceIdentifier);
+                    var result = await service.UpdateDeviceStatus(dto);
+                    _logger.LogInformation("[MQTT] Updated status for device {DeviceId} with status = {status}", dto.DeviceIdentifier, result);
                 }
                 catch (DbUpdateException dbEx)
                 {
@@ -133,7 +139,6 @@ namespace VineyardApp.MQTT
                 {
                     _logger.LogError(ex, "[MQTT] Unexpected error updating device {DeviceId}", dto.DeviceIdentifier);
                 }
-                _logger.LogInformation("[MQTT] Updated status for device {DeviceId}", dto.DeviceIdentifier);
             };
 
             // Connect

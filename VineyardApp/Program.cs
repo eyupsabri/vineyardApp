@@ -4,10 +4,10 @@ using Entities;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using MQTTnet;
+using VineyardApp.BackgroundServices;
 using VineyardApp.MQTT;
 
 var builder = WebApplication.CreateBuilder(args);
-
 
 // Configure forwarded headers (so HTTPS redirection works behind Fly proxy)
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
@@ -52,7 +52,7 @@ builder.Services.AddAutoMapper(typeof(Program).Assembly);
 
 
 builder.Services.Configure<MqttOptions>(
-    builder.Configuration.GetSection("HiveMQ"));
+    builder.Configuration.GetSection("MqttProxy"));
 
 builder.Services.AddSingleton(sp =>
 {
@@ -60,8 +60,11 @@ builder.Services.AddSingleton(sp =>
     return factory.CreateMqttClient();
 });
 
+builder.Services.AddHostedService<DesiredActualReconciler>();
+builder.Services.AddHostedService<OfflinePumpChecker>();
 // 6) Register your background MQTT subscriber
 builder.Services.AddHostedService<MqttStatusSubscriber>();
+builder.Services.AddSingleton<IMessagePublisher, MqttMessagePublisher>();
 
 
 var app = builder.Build();

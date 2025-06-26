@@ -1,4 +1,5 @@
-﻿using Entities;
+﻿using Business.Results;
+using Entities;
 using Entities.DTOs;
 
 namespace Business.Services
@@ -7,5 +8,7 @@ namespace Business.Services
     {
         public Task<IoTDevice> GetIoTDeviceByDeviceId(Guid id);
         public Task<int> UpdateDeviceStatus(UpdateStatusRequestDTO dto);
+        public Task<OperationResult> SetDesiredState(ChangePumpStateDTO dto);
+        public Task<OperationResult> ClearManualOverride(ClearManualOverrideDTO dto);
     }
 }

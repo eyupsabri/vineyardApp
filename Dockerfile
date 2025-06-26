@@ -16,6 +16,11 @@ RUN dotnet publish -c Release -o /app/publish
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 
+# Install sqlite3 CLI for debugging
+RUN apt-get update \
+ && apt-get install -y sqlite3 \
+ && rm -rf /var/lib/apt/lists/*
+
 # Prepare volume mount for SQLite
 RUN mkdir -p /app/Data
 

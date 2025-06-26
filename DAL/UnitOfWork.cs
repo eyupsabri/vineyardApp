@@ -1,4 +1,5 @@
 ﻿using Entities;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace DAL
 {
@@ -30,6 +31,7 @@ namespace DAL
             }
         }
 
+        public async Task<IDbContextTransaction> BeginTransactionAsync() => await _context.Database.BeginTransactionAsync();
         public void Dispose() => _context.Dispose();
     }
 }
