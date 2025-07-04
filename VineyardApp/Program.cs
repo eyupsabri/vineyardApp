@@ -70,7 +70,7 @@ builder.Services.AddSingleton<IMessagePublisher, MqttMessagePublisher>();
 var app = builder.Build();
 
 app.UseForwardedHeaders();        // ← must come before everything that relies on proto
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 using (var scope = app.Services.CreateScope())
 {

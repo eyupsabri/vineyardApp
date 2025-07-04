@@ -35,7 +35,7 @@ namespace VineyardApp.Controllers
 
 
             if (result.IsNotFound) return NotFound();
-            if (result.IsNotFound) return Conflict(new { message = result.ErrorMessage });
+            if (result.IsConflict) return Conflict(new { message = result.ErrorMessage });
             if (result.IsFailure) return BadRequest(new { message = result.ErrorMessage });
             return Ok(); // Value is your anonymous object { desiredState = ... }
         }

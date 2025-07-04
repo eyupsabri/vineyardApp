@@ -174,6 +174,11 @@ namespace Business.Services
                     if (changeSource == PumpStateChangeSource.IoT || changeSource == PumpStateChangeSource.Manual)
                     {
                         pump.IsManualOverride = true;
+
+                    }
+                    else
+                    {
+                        pump.IsManualOverride = false;
                     }
                 }
                 else
@@ -186,12 +191,12 @@ namespace Business.Services
                         var session = await _unitOfWork.PumpSessionsRepo.GetPumpSessionById(sessionId.Value);
                         session.EndTime = DateTime.UtcNow;
                         session.EndSource = changeSource;
-                        if (previousHeartbeat.HasValue && (now - previousHeartbeat.Value) > TimeSpan.FromMinutes(5))
-                        {
-                            session.EndTime = previousHeartbeat;
-                            session.WasInterrupted = true;
-                            session.EndSource = null;
-                        }
+                        //if (previousHeartbeat.HasValue && (now - previousHeartbeat.Value) > TimeSpan.FromMinutes(5))
+                        //{
+                        //    session.EndTime = previousHeartbeat;
+                        //    session.WasInterrupted = true;
+                        //    session.EndSource = null;
+                        //}
                     }
 
                     pump.IsManualOverride = false;
@@ -199,6 +204,48 @@ namespace Business.Services
                 }
 
 
+            }
+            else
+            {
+                if (dto.PowerOutage)
+                {
+                    var sessionId = await _unitOfWork.PumpSessionsRepo.GetLatestSessionIdByDeviceIdentifier(dto.DeviceIdentifier);
+                    if (sessionId != null)
+                    {
+                        pump.DesiredState = dto.ActualState;
+                        var session = await _unitOfWork.PumpSessionsRepo.GetPumpSessionById(sessionId.Value);
+                        session.EndTime = previousHeartbeat;
+                        session.WasInterrupted = true;
+                        session.EndSource = null;
+
+                        if (dto.ActualState)
+                        {
+                            PumpStateChangeSource changeSource = dto.TriggeredBy switch
+                            {
+                                DeviceTriggerSource.Manual => PumpStateChangeSource.Manual,
+                                DeviceTriggerSource.IoT => PumpStateChangeSource.IoT,
+                                _ => PumpStateChangeSource.App
+                            };
+
+                            pump.Sessions.Add(new PumpSession
+                            {
+                                PumpId = pump.Id,
+                                StartTime = now,
+                                StartSource = changeSource,
+                            });
+
+                            if (changeSource == PumpStateChangeSource.IoT || changeSource == PumpStateChangeSource.Manual)
+                            {
+                                pump.IsManualOverride = true;
+                            }
+                            else
+                            {
+                                pump.IsManualOverride = false;
+                            }
+                        }
+                    }
+
+                }
             }
             return await _unitOfWork.SaveChangesAsync(); // Save changes to the database and return success status
 

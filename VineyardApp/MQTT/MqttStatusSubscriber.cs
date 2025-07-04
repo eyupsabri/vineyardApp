@@ -120,7 +120,8 @@ namespace VineyardApp.MQTT
                 {
                     DeviceIdentifier = deviceGuid,
                     ActualState = statusDto.ActualState,
-                    TriggeredBy = statusDto.TriggeredBy
+                    TriggeredBy = statusDto.TriggeredBy,
+                    PowerOutage = statusDto.PowerOutage,
                 };
 
                 using var scope = _scopeFactory.CreateScope();

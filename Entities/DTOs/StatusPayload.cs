@@ -6,5 +6,6 @@ namespace Entities.DTOs
     {
         public bool ActualState { get; set; }
         public DeviceTriggerSource TriggeredBy { get; set; } = DeviceTriggerSource.Unknown;
+        public bool PowerOutage { get; set; } = false;
     }
 }
