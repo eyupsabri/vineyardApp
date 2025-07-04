@@ -9,6 +9,24 @@ using VineyardApp.MQTT;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
+
+
+
+
+//For local development only - open port in firewall settings -------------------------------------------------------------------------------
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(5018);  // <-- listen on 0.0.0.0:5018
+    // If you also want HTTPS locally:
+    // options.ListenAnyIP(5001, listenOpts => listenOpts.UseHttps());
+});
+
+
+
+
+
+
 // Configure forwarded headers (so HTTPS redirection works behind Fly proxy)
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
@@ -66,18 +84,24 @@ builder.Services.AddHostedService<OfflinePumpChecker>();
 builder.Services.AddHostedService<MqttStatusSubscriber>();
 builder.Services.AddSingleton<IMessagePublisher, MqttMessagePublisher>();
 
-
 var app = builder.Build();
 
+
+
+//---------------------Local Development Only-------------------------------------------------------------------------
 app.UseForwardedHeaders();        // ← must come before everything that relies on proto
 //app.UseHttpsRedirection();
+
+
+
+
+
 
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
 }
-
 
 // Configure the HTTP request pipeline.
 //if (app.Environment.IsDevelopment())
