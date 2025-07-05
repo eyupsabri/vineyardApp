@@ -48,7 +48,7 @@ namespace Entities
             modelBuilder.Entity<User>().HasData(new User
             {
                 Id = 1,
-                Username = "testuser",
+                Email = "husnu.cemre@gmail.com",
                 CurrentJwtId = null,
                 RefreshJwtId = null,
                 PasswordHash = "password123" // Example hash for "password123"
