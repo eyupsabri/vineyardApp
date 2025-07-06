@@ -1,4 +1,5 @@
-﻿using Entities.DTOs;
+﻿using Business.Services;
+using Entities.DTOs;
 using Microsoft.AspNetCore.Mvc;
 
 namespace VineyardApp.Controllers
@@ -7,18 +8,26 @@ namespace VineyardApp.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        public AuthController()
+        private readonly IUserService _userService;
+        public AuthController(IUserService userService)
         {
+            _userService = userService;
+
         }
 
         [HttpPost("Login")]
-        public IActionResult Login([FromBody] LoginRequest request)
+        public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             // Here you would typically validate the user credentials against a database
             // For this example, we'll just return a dummy response
-            if (request.Email == "admin" && request.Password == "password")
+            var user = await _userService.AuthenticateUser(request.Email, request.Password);
+            if (user != null)
             {
-                return Ok(new { Token = "dummy-jwt-token", RefreshToken = "dummy-refresh-token" });
+                return Ok(new
+                {
+                    AccessToken = user.CurrentJwtId,
+                    RefreshToken = user.RefreshJwtId,
+                });
             }
             return Unauthorized(new { message = "Invalid username or password" });
         }

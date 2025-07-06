@@ -2,8 +2,10 @@
 using DAL;
 using Entities;
 using Entities.DTOs;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
+using VineyardApp.Hubs;
 using static Entities.Enums.DbEnums;
 using static Entities.Enums.Enums;
 
@@ -13,14 +15,16 @@ namespace Business.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMessagePublisher _publisher;
+        private readonly IHubContext<PumpStatusHub> _hub;
         private readonly ILogger<IIoTDevicesService> _logger;
 
 
 
-        public IoTDevicesService(IUnitOfWork unitOfWork, IMessagePublisher publisher, ILogger<IIoTDevicesService> logger)
+        public IoTDevicesService(IUnitOfWork unitOfWork, IMessagePublisher publisher, ILogger<IIoTDevicesService> logger, IHubContext<PumpStatusHub> hub)
         {
             _unitOfWork = unitOfWork;
             _publisher = publisher;
+            _hub = hub;
             _logger = logger;
         }
 
@@ -247,6 +251,15 @@ namespace Business.Services
 
                 }
             }
+            await _hub.Clients
+          .Group(dto.DeviceIdentifier.ToString())
+          .SendAsync("PumpStatusChanged", new PumpStatusDTO
+          {
+              DeviceIdentifier = dto.DeviceIdentifier,
+              DesiredState = pump.DesiredState,
+              ActualState = pump.ActualState,
+              LastHeartBeat = pump.LastHeartbeat
+          });
             return await _unitOfWork.SaveChangesAsync(); // Save changes to the database and return success status
 
         }

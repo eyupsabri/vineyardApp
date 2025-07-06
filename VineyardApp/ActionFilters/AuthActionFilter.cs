@@ -1,5 +1,4 @@
 ﻿using Business.Services;
-using DAL;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
@@ -7,13 +6,13 @@ namespace VineyardApp.ActionFilters
 {
     public class AuthActionFilter : IAsyncActionFilter
     {
-        private readonly IUnitOfWork _unitOfWork;
+        private readonly IUserService _userService;
         private readonly ITokenService _tokenService;
 
 
-        public AuthActionFilter(IUnitOfWork unitOfWork, ITokenService tokenService)
+        public AuthActionFilter(IUserService userService, ITokenService tokenService)
         {
-            _unitOfWork = unitOfWork;
+            _userService = userService;
             _tokenService = tokenService;
         }
         public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
@@ -35,7 +34,7 @@ namespace VineyardApp.ActionFilters
                 {
                     if (response.TokenType == "access")
                     {
-                        var user = await _unitOfWork.UserRepo.GetUserByEmailAsync(response.Email);
+                        var user = await _userService.GetUserByEmail(response.Email);
                         if (user == null)
                         {
                             context.Result = new UnauthorizedResult();
@@ -61,7 +60,7 @@ namespace VineyardApp.ActionFilters
                 {
                     if (response.TokenType == "access")
                     {
-                        var user = await _unitOfWork.UserRepo.GetUserByEmailAsync(response.Email);
+                        var user = await _userService.GetUserByEmail(response.Email);
                         if (user == null || user.CurrentJwtId != token)
                         {
                             context.Result = new UnauthorizedResult();

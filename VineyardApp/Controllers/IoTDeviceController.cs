@@ -3,6 +3,7 @@ using Business.Results;
 using Business.Services;
 using Entities.DTOs;
 using Microsoft.AspNetCore.Mvc;
+using VineyardApp.ActionFilters;
 
 namespace VineyardApp.Controllers
 {
@@ -21,6 +22,7 @@ namespace VineyardApp.Controllers
 
 
         [HttpPost("SetDesiredState")]
+        [ServiceFilter(typeof(AuthActionFilter))]
         public async Task<IActionResult> SetDesiredState(ChangePumpStateDTO dto)
         {
             OperationResult result = OperationResult.NotFound();
