@@ -7,6 +7,7 @@ namespace DAL
         IIoTDeviceRepository IoTDevicesRepo { get; }
         IPumpSessionRepository PumpSessionsRepo { get; }
         IUserRepository UserRepo { get; }
+        IPumpRepository PumpRepo { get; }
         Task<IDbContextTransaction> BeginTransactionAsync();
 
         Task<int> SaveChangesAsync();

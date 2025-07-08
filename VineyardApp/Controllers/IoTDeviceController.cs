@@ -1,6 +1,11 @@
 ﻿using AutoMapper;
+using Business.FilterAndSort;
+using Business.Filters;
+using Business.PagedList;
 using Business.Results;
 using Business.Services;
+using DAL;
+using Entities;
 using Entities.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using VineyardApp.ActionFilters;
@@ -13,9 +18,11 @@ namespace VineyardApp.Controllers
     {
         private IIoTDevicesService _iotDeviceService;
         private readonly IMapper _mapper;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public IoTDeviceController(IIoTDevicesService iotDeviceService, IMapper mapper)
+        public IoTDeviceController(IIoTDevicesService iotDeviceService, IMapper mapper, IUnitOfWork unitOfWork)
         {
+            _unitOfWork = unitOfWork;
             _iotDeviceService = iotDeviceService;
             _mapper = mapper;
         }
@@ -70,6 +77,24 @@ namespace VineyardApp.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
+        }
+
+        [HttpGet("[action]")]
+        [ServiceFilter(typeof(AuthActionFilter))]
+        public async Task<IActionResult> GetPumps([FromQuery] PumpFilter filter, int pagedIndex = 0)
+        {
+            var pumps = _unitOfWork.PumpRepo.QueryWithDevice();
+            var filteredPumps = pumps.FilterAndSort(filter);
+            var pagedPumps = new PagedList<Pump>(pagedIndex);
+            pagedPumps.ToPagedList(filteredPumps);
+            var mapped = pagedPumps.FinalList.Select(p => _mapper.Map<PumpResponseDTO>(p));
+
+            return Ok(new
+            {
+                PageIndex = pagedPumps.PageIndex,
+                PageCount = pagedPumps.PageCount,
+                data = mapped
+            });
         }
 
     }

@@ -253,10 +253,10 @@ namespace Business.Services
             }
             await _hub.Clients
           .Group(dto.DeviceIdentifier.ToString())
-          .SendAsync("PumpStatusChanged", new PumpStatusDTO
+          .SendAsync("ReceivePumpUpdate", new PumpStatusDTO
           {
               DeviceIdentifier = dto.DeviceIdentifier,
-              DesiredState = pump.DesiredState,
+              NeedsAttention = pump.NeedsAttention,
               ActualState = pump.ActualState,
               LastHeartBeat = pump.LastHeartbeat
           });
