@@ -21,10 +21,17 @@ namespace VineyardApp.AutoMapper
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
                 .ForMember(dest => dest.ActualState, opt => opt.MapFrom(src => src.ActualState))
                 .ForMember(dest => dest.IsManualOverride, opt => opt.MapFrom(src => src.IsManualOverride))
-                .ForMember(dest => dest.LastHeartbeat, opt => opt.MapFrom(src => src.LastHeartbeat))
+                .ForMember(dest => dest.LastHeartbeat, opt => opt.MapFrom(src => src.LastHeartbeat.HasValue ? new DateTimeOffset(
+                    DateTime.SpecifyKind(src.LastHeartbeat.Value, DateTimeKind.Utc),
+                    TimeSpan.Zero
+                    )
+                    : (DateTimeOffset?)null))
                 .ForMember(dest => dest.NeedsAttention, opt => opt.MapFrom(src => src.NeedsAttention))
+                .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive))
+                .ForMember(dest => dest.Loading, opt => opt.MapFrom(src => src.Loading))
                 .ForMember(dest => dest.DeviceIdentifier, opt => opt.MapFrom(src => src.IoTDevice.DeviceIdentifier))
                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.IoTDevice.Name));
+
         }
     }
 }

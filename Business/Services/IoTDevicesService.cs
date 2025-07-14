@@ -76,6 +76,18 @@ namespace Business.Services
             }
 
             var pump = device.Pump;
+
+            if (pump == null)
+            {
+                _logger.LogWarning("Pump for device {Id} not found", dto.DeviceIdentifier);
+                return OperationResult.NotFound();
+            }
+            if (pump.LastHeartbeat < DateTime.UtcNow.AddMinutes(-5))
+            {
+                _logger.LogWarning("Pump {Id} is offline, cannot set desired state", dto.DeviceIdentifier);
+                return OperationResult.Failure("Pump is offline, please check connection.");
+            }
+
             if (pump.IsManualOverride)
             {
                 _logger.LogInformation("Pump {Id} in manual override, skipping", dto.DeviceIdentifier);
@@ -258,9 +270,18 @@ namespace Business.Services
               DeviceIdentifier = dto.DeviceIdentifier,
               NeedsAttention = pump.NeedsAttention,
               ActualState = pump.ActualState,
-              LastHeartBeat = pump.LastHeartbeat
+              LastHeartBeat = pump.LastHeartbeat,
+              IsActive = pump.IsActive,
+              Loading = pump.Loading,
           });
             return await _unitOfWork.SaveChangesAsync(); // Save changes to the database and return success status
+
+        }
+
+        public async Task<List<Pump>> GetPumpsWithId(List<Guid> ids)
+        {
+            var pumps = await _unitOfWork.PumpRepo.GetPumpsById(ids);
+            return pumps;
 
         }
     }

@@ -10,6 +10,7 @@ using MQTTnet;
 using System.Text;
 using VineyardApp.ActionFilters;
 using VineyardApp.BackgroundServices;
+using VineyardApp.Helper;
 using VineyardApp.Hubs;
 using VineyardApp.MQTT;
 
@@ -105,7 +106,7 @@ builder.Host.ConfigureHostOptions(opts =>
 });
 
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(opts => { opts.JsonSerializerOptions.Converters.Add(new UtcDateTimeOffsetConverter()); });
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

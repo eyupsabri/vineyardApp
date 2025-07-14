@@ -16,5 +16,14 @@ namespace DAL
                 .Include(p => p.IoTDevice);
 
         }
+
+        public async Task<List<Pump>> GetPumpsById(List<Guid> ids)
+        {
+            return await _context.Pumps
+                .Include(p => p.IoTDevice)
+                .Where(p => ids.Contains(p.IoTDevice.DeviceIdentifier))
+                .ToListAsync();
+        }
+
     }
 }

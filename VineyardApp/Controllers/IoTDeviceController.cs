@@ -97,5 +97,18 @@ namespace VineyardApp.Controllers
             });
         }
 
+        [HttpGet("[action]")]
+        [ServiceFilter(typeof(AuthActionFilter))]
+        public async Task<IActionResult> GetPumpsByIds([FromQuery] List<Guid> ids)
+        {
+            var pump = await _iotDeviceService.GetPumpsWithId(ids);
+            if (pump == null)
+            {
+                return NotFound($"Pump with IDs not found.");
+            }
+            var mapped = pump.Select(p => _mapper.Map<PumpResponseDTO>(p));
+            return Ok(mapped);
+
+        }
     }
 }

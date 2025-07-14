@@ -14,7 +14,11 @@
         public bool NeedsAttention { get; set; } = false;
         public int IoTDeviceId { get; set; }
         public IoTDevice IoTDevice { get; set; }
-
         public ICollection<PumpSession> Sessions { get; set; } = new List<PumpSession>();
+        public bool IsActive =>
+           LastHeartbeat.HasValue
+           && (DateTime.UtcNow - LastHeartbeat.Value) < TimeSpan.FromMinutes(5);
+        public bool Loading => DesiredState != ActualState;
+
     }
 }

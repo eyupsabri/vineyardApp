@@ -10,5 +10,6 @@ namespace Business.Services
         public Task<int> UpdateDeviceStatus(UpdateStatusRequestDTO dto);
         public Task<OperationResult> SetDesiredState(ChangePumpStateDTO dto);
         public Task<OperationResult> ClearManualOverride(ClearManualOverrideDTO dto);
+        public Task<List<Pump>> GetPumpsWithId(List<Guid> id);
     }
 }
