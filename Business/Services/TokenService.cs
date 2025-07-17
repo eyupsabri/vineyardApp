@@ -80,7 +80,7 @@ namespace Business.Services
                     var jwtToken = _handler.ReadToken(token) as JwtSecurityToken;
                     var emailClaim = jwtToken?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email);
                     var tokenTypeClaim = jwtToken?.Claims.FirstOrDefault(c => c.Type == "token_type");
-                    return new TokenHelper(true, true, tokenTypeClaim.Value, "");
+                    return new TokenHelper(true, true, tokenTypeClaim.Value, emailClaim.Value);
 
                 }
                 else
@@ -104,14 +104,14 @@ namespace Business.Services
             var tokenType = isRefresh ? "refresh" : "access";
 
             var claims = new[] {
-                new Claim(JwtRegisteredClaimNames.Email, email),
+                new Claim(ClaimTypes.Email, email),
                 new Claim("token_type", tokenType)
             };
 
             var token = new JwtSecurityToken(_settings.Issuer,
               _settings.Issuer,
               claims,
-              expires: isRefresh ? DateTime.Now.AddDays(30) : DateTime.Now.AddMinutes(30),
+              expires: isRefresh ? DateTime.Now.AddDays(30) : DateTime.Now.AddSeconds(15),
               signingCredentials: credentials);
 
             return _handler.WriteToken(token);

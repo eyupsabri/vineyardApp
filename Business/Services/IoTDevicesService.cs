@@ -65,14 +65,14 @@ namespace Business.Services
             return await _unitOfWork.IoTDevicesRepo.GetIoTDeviceByDeviceId(id);
         }
         //App den geleni publish et
-        public async Task<OperationResult> SetDesiredState(ChangePumpStateDTO dto)
+        public async Task<OperationResult<Pump>> SetDesiredState(ChangePumpStateDTO dto)
         {
             var device = await GetIoTDeviceByDeviceId(dto.DeviceIdentifier);
             if (device == null)
             {
                 _logger.LogWarning("Device {Id} not found", dto.DeviceIdentifier);
 
-                return OperationResult.NotFound();
+                return OperationResult<Pump>.NotFound();
             }
 
             var pump = device.Pump;
@@ -80,18 +80,23 @@ namespace Business.Services
             if (pump == null)
             {
                 _logger.LogWarning("Pump for device {Id} not found", dto.DeviceIdentifier);
-                return OperationResult.NotFound();
+                return OperationResult<Pump>.NotFound();
             }
-            if (pump.LastHeartbeat < DateTime.UtcNow.AddMinutes(-5))
+            if (pump.Loading)
+            {
+                _logger.LogWarning("Pump {Id} is currently loading, cannot set desired state", dto.DeviceIdentifier);
+                return OperationResult<Pump>.Failure("Pump is currently loading, please wait.");
+            }
+            if (!pump.IsActive)
             {
                 _logger.LogWarning("Pump {Id} is offline, cannot set desired state", dto.DeviceIdentifier);
-                return OperationResult.Failure("Pump is offline, please check connection.");
+                return OperationResult<Pump>.Failure("Pump is offline, please check connection.");
             }
 
             if (pump.IsManualOverride)
             {
                 _logger.LogInformation("Pump {Id} in manual override, skipping", dto.DeviceIdentifier);
-                return OperationResult.Failure("Pump is in manual override.");
+                return OperationResult<Pump>.Failure("Pump is in manual override.");
             }
             var now = DateTime.UtcNow;
             var last = pump.LastDesiredChange ?? DateTime.UnixEpoch;
@@ -99,7 +104,7 @@ namespace Business.Services
             if (elapsed < TimeSpan.FromMinutes(1))
             {
                 _logger.LogInformation("Pump {Id} toggled {ElapsedSec}s ago (<60s), skipping", dto.DeviceIdentifier, elapsed.TotalSeconds);
-                return OperationResult.Conflict($"Wait {(60 - (int)elapsed.TotalSeconds)}s before toggling.");
+                return OperationResult<Pump>.Conflict($"Wait {(60 - (int)elapsed.TotalSeconds)}s before toggling.");
             }
             _logger.LogInformation("Current DesiredState for {Id} is {Old}, requested {New}", dto.DeviceIdentifier, pump.DesiredState, dto.DesiredState);
             if (pump.DesiredState != dto.DesiredState)
@@ -122,7 +127,7 @@ namespace Business.Services
                     if (saved <= 0)
                     {
                         await tx.RollbackAsync();
-                        return OperationResult.Failure("Failed to record desired state.");
+                        return OperationResult<Pump>.Failure("Failed to record desired state.");
                     }
 
                     _logger.LogInformation(saved > 0 ? "[DB] SaveChangesAsync succeeded" : "[DB] SaveChangesAsync did not persist any rows");
@@ -140,12 +145,12 @@ namespace Business.Services
                 {
                     _logger.LogError(ex, "Publish failed, rolling back DB change");
                     await tx.RollbackAsync();
-                    return OperationResult.Failure("Unable to send command, please try again.");
+                    return OperationResult<Pump>.Failure("Unable to send command, please try again.");
                 }
 
             }
 
-            return OperationResult.Success();
+            return OperationResult<Pump>.Success(pump);
         }
 
 

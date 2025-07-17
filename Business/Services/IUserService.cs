@@ -6,5 +6,6 @@ namespace Business.Services
     {
         public Task<User> AuthenticateUser(string email, string password);
         public Task<User> GetUserByEmail(string email);
+        public Task<User> RefreshTokenHandler(string token);
     }
 }

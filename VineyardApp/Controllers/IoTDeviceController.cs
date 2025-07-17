@@ -32,7 +32,7 @@ namespace VineyardApp.Controllers
         [ServiceFilter(typeof(AuthActionFilter))]
         public async Task<IActionResult> SetDesiredState(ChangePumpStateDTO dto)
         {
-            OperationResult result = OperationResult.NotFound();
+            OperationResult<Pump> result = OperationResult<Pump>.NotFound();
             try
             {
                 result = await _iotDeviceService.SetDesiredState(dto);
@@ -46,7 +46,8 @@ namespace VineyardApp.Controllers
             if (result.IsNotFound) return NotFound();
             if (result.IsConflict) return Conflict(new { message = result.ErrorMessage });
             if (result.IsFailure) return BadRequest(new { message = result.ErrorMessage });
-            return Ok(); // Value is your anonymous object { desiredState = ... }
+            var pumpMapped = _mapper.Map<PumpResponseDTO>(result.Value);
+            return Ok(pumpMapped);
         }
 
         [HttpGet("[action]")]

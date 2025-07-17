@@ -31,5 +31,24 @@ namespace Business.Services
         {
             return await _unitOfWork.UserRepo.GetUserByEmailAsync(email);
         }
+
+        public async Task<User> RefreshTokenHandler(string token)
+        {
+            var tokenHelper = _tokenService.ValidateToken(token);
+            if (tokenHelper.IsValidToken && !tokenHelper.IsExpired && tokenHelper.TokenType == "refresh")
+            {
+                var user = await _unitOfWork.UserRepo.GetUserByEmailAsync(tokenHelper.Email);
+                if (user != null && user.RefreshJwtId == token)
+                {
+                    var newAccessToken = _tokenService.GenerateToken(user.Email, false);
+                    var newRefreshToken = _tokenService.GenerateToken(user.Email, true);
+                    user.CurrentJwtId = newAccessToken;
+                    user.RefreshJwtId = newRefreshToken;
+                    await _unitOfWork.SaveChangesAsync();
+                    return user;
+                }
+            }
+            return null;
+        }
     }
 }

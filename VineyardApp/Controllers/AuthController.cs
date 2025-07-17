@@ -9,6 +9,7 @@ namespace VineyardApp.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IUserService _userService;
+
         public AuthController(IUserService userService)
         {
             _userService = userService;
@@ -30,6 +31,19 @@ namespace VineyardApp.Controllers
                 });
             }
             return Unauthorized(new { message = "Invalid username or password" });
+        }
+
+        [HttpGet]
+        [Route("[action]")]
+        public async Task<IActionResult> RefreshToken(string token)
+        {
+            var user = await _userService.RefreshTokenHandler(token);
+            if (user != null)
+            {
+
+                return Ok(new { accessToken = user.CurrentJwtId, refreshToken = user.RefreshJwtId });
+            }
+            return BadRequest();
         }
     }
 }
